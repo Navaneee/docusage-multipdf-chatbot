@@ -6,34 +6,13 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from dotenv import load_dotenv
-# from langchain.memory import ConversationBufferMemory
-# from langchain.chat_models import ChatOpenAI
-# from langchain.chains import ConversationalRetrievalChain
-from htmlTemplates import user_template,bot_template
 import tempfile
 import os
 import os
+
 os.environ["STREAMLIT_SERVER_ENABLE_FILE_WATCHER"] = "false"  # Disables problematic inspection
 load_dotenv()
 st.set_page_config(page_title="Chat with multiple PDFs",page_icon=":books:") #page title
-
-# def get_coversation_chain(vectorstore):
-#     llm=ChatOpenAI()
-#     memory=ConversationBufferMemory(memory_key='chat_history',return_message=True)
-#     conversation_chain=ConversationalRetrievalChain.from_llm(llm=llm,retriever=vectorstore.as_retriever(),memory=memory)
-#     return conversation_chain
-
-# def handle_userinput(user_question):
-#     response = st.session_state.conversation({'question': user_question})
-#     st.session_state.chat_history = response['chat_history']
-
-#     for i, message in enumerate(st.session_state.chat_history):
-#         if i % 2 == 0:
-#             st.write(user_template.replace(
-#                 "{{MSG}}", message.content), unsafe_allow_html=True)
-#         else:
-#             st.write(bot_template.replace(
-#                 "{{MSG}}", message.content), unsafe_allow_html=True)
 
 @st.cache_resource 
 def initiate_project():
@@ -51,8 +30,6 @@ def initiate_project():
                                                     verbose = True,
                                                     temperature = 0.5,
                                                     google_api_key=os.getenv("GEMINI_API_KEY"))
-    
-    
     
     return text_splitter, embeddings, gemini_llm
 
@@ -75,7 +52,6 @@ def store_documents(file_paths,text_splitter,embeddings):
             chunks = text_splitter.split_documents(all_pages)
 
             #turns text into numerical vectors using transformer models.
-            
             #create a vector store from the list of documents uploaded
             vectorstore  = Chroma.from_documents(documents=chunks,
                                                         embedding=embeddings,
@@ -87,14 +63,9 @@ def store_documents(file_paths,text_splitter,embeddings):
         print(e)
         return False
 
-
-
-
-
 def main(): 
     st.header("Chat with multiple PDFs:books:")
     text_splitter,embeddings , gemini_llm = initiate_project()
-
 
     with st.sidebar:
         st.subheader("Upload Documents")
@@ -104,7 +75,6 @@ def main():
             with st.spinner("Processing documents..."):
                 file_paths=[]
                 
-
                 for file in files:
                     os.makedirs("temp",exist_ok=True)
                     with open(os.path.join("temp",file.name),"wb") as f:    #(temp/file.name.pdf)   (f is an empty pdf)
@@ -116,22 +86,7 @@ def main():
 
                 else:
                     st.write("Document already exist")
-
-                    
-                    
-
-
-                    # Load using PyMuPDFLoader
-                    
-
-                    # Optionally delete the temp file after use
-                    
-
-                # Split long text into chunks
-              
-                
-                # st.session_state.conversation=get_coversation_chain(vectorstore)
-
+                                
     query=st.text_input("Ask a question related to uploaded pdfs")
     button=st.button("Submit",key='query')        
 
@@ -145,12 +100,6 @@ def main():
             text = doc.page_content
             retrieved_string+=text+"\n\n"
 
-        #combining search query and retrived string into a single string
-        # combined_string1=f"""Answer the question below
-        #     {query}
-        #     using the below context for answering the question
-        #     {retrieved_string}"""
-
         combined_string=f"""You are an expert assistant. Use the context below to answer the user's question as clearly,directly and accurately as possible.
 
             Context:
@@ -160,15 +109,9 @@ def main():
             {query}
 
             Answer:"""
-
-        #Initiating geminillm
-        
-
         #Predicting the answer of the query using geminillm
         response=gemini_llm.predict(combined_string)
         st.write(response)
-
-
 
 if __name__ == '__main__':
     main()
